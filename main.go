@@ -11,7 +11,10 @@ import (
 	"github.com/seancfoley/ipaddress-go/ipaddr"
 )
 
+// we have to strip the port from the incoming address
 var portRegEx = regexp.MustCompile(`:[0-9]+$`)
+
+// we need to strip the brackets from the IPv6 address
 var	bracketRegEx = regexp.MustCompile(`[\[\]]`)
 
 func parseQuery(m *dns.Msg, s string) {
@@ -45,11 +48,16 @@ func handleDnsRequest(w dns.ResponseWriter, r *dns.Msg) {
 	m.SetReply(r)
 	m.Compress = false
 
+	// get the requestor's IP address:port
   addressOfRequester := w.RemoteAddr()
 	
+	// get rid of the port
 	justTheAddress := portRegEx.ReplaceAllString(addressOfRequester.String(), "")
+
+	// get rid of any brackets
 	justTheAddress = bracketRegEx.ReplaceAllString(justTheAddress, "")
 
+	// if IPv6, expand it just in case it came in abbreviated
 	if strings.Contains(justTheAddress, ":") {
 	  justTheAddress = ipaddr.NewIPAddressString(justTheAddress).GetAddress().ToFullString()
 	}
@@ -64,16 +72,23 @@ func handleDnsRequest(w dns.ResponseWriter, r *dns.Msg) {
 }
 
 func main() {
-	// attach request handler func
+
+	// handle the Iceland domain
 	dns.HandleFunc("is.", handleDnsRequest)
 
-	// start server
+  // TODO make this configuratble
 	port := 53
+
 	server := &dns.Server{Addr: ":" + strconv.Itoa(port), Net: "udp"}
+
 	log.Printf("Starting at %d\n", port)
+
 	err := server.ListenAndServe()
+
 	defer server.Shutdown()
+
 	if err != nil {
 		log.Fatalf("Failed to start server: %s\n ", err.Error())
 	}
+
 }
