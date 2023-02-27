@@ -18,7 +18,7 @@ dig myip.is TXT @ip.rudis.net
 ## Installation
 
 ```
-go install github.com/hrbrmstr/extip-svr@latest
+go install -ldflags "-s -w" github.com/hrbrmstr/extip-svr@latest
 ```
 
 ## Disabling The systemd Stub Resolver
