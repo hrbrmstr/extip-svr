@@ -12,7 +12,7 @@ It works for `A`, `AAAA`, and `TXT`. Safest bet is to use the `TXT` since it'll 
 
 
 ```
-dig my.ip is TXT @ip.rudis.net
+dig myip.is TXT @ip.rudis.net
 ```
 
 ## Installation
