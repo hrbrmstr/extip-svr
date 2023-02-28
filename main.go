@@ -2,11 +2,13 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"regexp"
 	"strconv"
 	"strings"
 
+	"github.com/alexflint/go-arg"
 	"github.com/miekg/dns"
 	"github.com/seancfoley/ipaddress-go/ipaddr"
 )
@@ -21,19 +23,19 @@ func parseQuery(m *dns.Msg, s string) {
 	for _, q := range m.Question {
 		switch q.Qtype {
 		case dns.TypeA:
-			log.Printf("Query for %s\n", q.Name)
+			log.Printf("A Query for %s from %s\n", q.Name, s)
 			rr, err := dns.NewRR(fmt.Sprintf("%s A %s", q.Name, s))
 			if err == nil {
 				m.Answer = append(m.Answer, rr)
 			}
 		case dns.TypeAAAA:
-			log.Printf("Query for %s\n", q.Name)
+			log.Printf("AAAA Query for %s from %s\n", q.Name, s)
 			rr, err := dns.NewRR(fmt.Sprintf("%s AAAA %s", q.Name, s))
 			if err == nil {
 				m.Answer = append(m.Answer, rr)
 			}
 		case dns.TypeTXT:
-			log.Printf("Query for %s\n", q.Name)
+			log.Printf("TXT Query for %s from %s\n", q.Name, s)
 			rr, err := dns.NewRR(fmt.Sprintf("%s TXT %s", q.Name, s))
 			if err == nil {
 				m.Answer = append(m.Answer, rr)
@@ -73,15 +75,29 @@ func handleDnsRequest(w dns.ResponseWriter, r *dns.Msg) {
 
 func main() {
 
-	// handle the Iceland domain
-	dns.HandleFunc("is.", handleDnsRequest)
+	var args struct {
+		Port int    `arg:"-p,--port,env:EXTIP_PORT" help:"bind port" placeholder:"PORT" default:"53"`
+		TLD  string `arg:"-t,--tld,env:EXTIP_TLD" help:"TLD to handle" placeholder:"TLD" default:"is."`
+		Quiet bool  `arg:"-q,--quiet" help:"Disable log messages"`
+	}
 
-  // TODO make this configuratble
-	port := 53
+	arg.MustParse(&args)
 
-	server := &dns.Server{Addr: ":" + strconv.Itoa(port), Net: "udp"}
+	if args.Quiet {
+	  log.SetOutput(ioutil.Discard)
+	}
 
-	log.Printf("Starting at %d\n", port)
+  if !strings.HasSuffix(args.TLD, ".") {
+		args.TLD = args.TLD + "."
+	}
+
+  // handle the specified domain
+	dns.HandleFunc(args.TLD, handleDnsRequest)
+
+	server := &dns.Server{Addr: ":" + strconv.Itoa(args.Port), Net: "udp"}
+
+	log.Printf("Binding to port: %d\n", args.Port)
+	log.Printf("Registering TLD: %s\n", args.TLD)
 
 	err := server.ListenAndServe()
 
