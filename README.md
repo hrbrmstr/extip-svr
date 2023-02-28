@@ -34,7 +34,7 @@ Options:
   --tld TLD, -t TLD      TLD to handle [default: is., env: EXTIP_TLD]
   --quiet, -q            Disable log messages
   --help, -h             display this help and exit
-	```
+```
 
 ## Disabling The systemd Stub Resolver
 
